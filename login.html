@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Log In</title>
+  <link rel="stylesheet" href="loginstyle">
+</head>
+
+<body>
+  <article>
+    <header>
+      <h1>Create Account</h1>
+      <form id="form" action="">
+        <label>Enter a username</label>
+        <input id="input" autocomplete="off" />
+        <button>Create Account</button>
+      </form>
+      <footer id="status">
+        
+      </footer>
+      <p>
+        This will be your username on Liquids Chat.
+      </p>
+      <script>
+        var messages = document.getElementById('messages');
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var status = document.getElementById('status');
+        
+        if (getCookie("userName") == null) {
+          window.location.replace(window.location.origin + window.location.pathname);
+        }
+        
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          if (input.value) {
+            input.readOnly = true;
+            const content = await (async () => {
+              const rawResponse = await fetch(window.location.origin + '/accountCreate?UserName=' + input.value, {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                // body: JSON.stringify({
+                //   UserName: input.value,
+                //   Id: getCookie("token"),
+                //   UserFullName: getCookie("fullName"),
+                //   FirstName: getCookie("username"),
+                //   UserEmail: getCookie("email")
+                // })
+              });
+              const content = await rawResponse.json();
+              return content;
+            })();
+
+            const status = document.getElementById('status');
+            if (content.status == "success") {
+              status.style.color = "green";
+              status.textContent  = content.message;
+              window.location.replace(window.location.origin);
+            } else if (content.status = "error") {
+              status.style.color = "red";
+              status.textContent = content.message;
+            } else {
+              status.style.color = "orange";
+              status.textContent  = "someting went wrong.";
+            }
+            
+            input.value = '';
+            input.readOnly = false;
+          }
+        });
+
+        function getCookie(name) {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+      </script>
+    </header>
+    <!-- <br> -->
+  </article>
+</body>
+</html>

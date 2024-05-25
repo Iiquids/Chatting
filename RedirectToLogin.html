@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Log In</title>
+  <link rel="stylesheet" href="loginstyle">
+</head>
+
+<body>
+  <article>
+    <header>
+      <h1>Redirecting To Login Page...</h1>
+      <script>
+        setTimeout(function(){
+          if (getCookie("userName") == null) {
+            window.location.replace("http://liquids.lol/login.html");
+          } else {
+            window.location.replace(document.location.origin);
+          }
+        }, 2000);
+        
+        function getCookie(name) {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+      </script>
+    </header>
+    <footer>
+      Login Using Google. You will be redirected back once you login.
+    </footer>
+  </article>
+</body>
+</html>

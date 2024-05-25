@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Iiquids Chat</title>
+        <link rel="stylesheet" href="../chatstyle">
+    </head>
+    <body>
+        <div id="notBlur">
+            <ul id="messages"></ul>
+            <ul id="typingBox">
+                <p id="typing"></p>
+            </ul>
+            <form id="form" action="">
+                <button id="login">Login to chat.</button>
+                <input id="input" autocomplete="off" />
+                <button id="send">Send</button>
+            </form>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io();
+            var messages = document.getElementById('messages');
+            var form = document.getElementById('form');
+            var input = document.getElementById('input');
+            var button = document.getElementById('send');
+            var login = document.getElementById("login");
+            var typing = document.getElementById("typing");
+            var periods = document.getElementById("periods");
+
+            let peopleTyping = [];
+            let isTyping = false;
+            
+            if (getCookie("username") == null) {
+                input.hidden = true;
+                button.hidden = true;
+                socket.emit('entered', "Someone");
+            } else {
+                login.hidden = true;
+                socket.emit('entered', getCookie("username"));
+            }
+
+            login.onclick = function() {
+                if (getCookie("username") != null) {
+                    return;
+                }
+                window.location.replace("http://liquids.lol/login.html");
+                return;
+            }
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (input.value) {
+                    isTyping = false;
+                    socket.emit('unTyping', JSON.stringify({username: getCookie("username"), token: getCookie("token")}));
+
+                    
+                    var value = {username: getCookie("username"), message: input.value, token: getCookie("token"), date: new Date().toString() };
+                    socket.emit('chat message', JSON.stringify(value));
+                    // Message
+                    var messageItem = document.createElement('li');
+                    messageItem.textContent =  "You: " + input.value;
+                    messageItem.id = "message";
+                    
+                    // Time
+                    var timeItem = document.createElement('li');
+                    timeItem.textContent = formatDate(new Date());
+                    timeItem.id = "time";
+                    timeItem.style.fontSize = "10px";
+
+                    messageItem.appendChild(timeItem);
+                    messages.appendChild(messageItem);
+                    window.scrollTo(0, document.body.scrollHeight);
+                    input.value = '';
+                }
+            });
+            
+            socket.on('chat message', function(msg) {
+                var json = JSON.parse(msg);
+                if (json.username == getCookie("username")) { return };
+                var messageItem = document.createElement('li');
+                messageItem.textContent =  json.username + ": " + json.message;
+                messageItem.id = "message";
+
+                // Time
+                var timeItem = document.createElement('li');
+                timeItem.textContent = formatDate(new Date(json.date));
+                timeItem.id = "time";
+                timeItem.style.fontSize = "10px";
+
+                messageItem.appendChild(timeItem);
+                messages.appendChild(messageItem);
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+            
+            socket.on('joined', function(msg) {
+                var item = document.createElement('li');
+                item.textContent = msg + " the chat.";
+                item.id = "joined";
+                messages.appendChild(item);
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+
+            socket.on('typing', function(username) {
+                if (peopleTyping.includes(username)) {
+                    return;
+                }
+                console.log("Typing")
+                peopleTyping.push(username);
+                let typingString = "";
+                for (let i = 0; i < peopleTyping.length; i++) {
+                    typingString += peopleTyping[i];
+                    if (typingString.length > 0) {
+                        typing.textContent = typingString + " is typing . . .";
+                    }
+                }
+            });
+
+            socket.on('stopTyping', function(username) {
+                peopleTyping.splice(peopleTyping.indexOf(username), 1);
+                if (peopleTyping.length > 0) {
+                    let typingString = "";
+                    for (let i = 0; i < peopleTyping.length; i++) {
+                        typingString += peopleTyping[i];
+                        if (typingString.length > 0) {
+                            typing.textContent = typingString + " is typing . . .";
+                        }
+                    }
+                } else {
+                    typing.textContent = "";
+                }
+            });
+
+            input.addEventListener("input", function () {
+                if (input.value.length > 0 && !isTyping) {
+                    isTyping = true;
+                    socket.emit('startedTyping', JSON.stringify({username: getCookie("username"), token: getCookie("token")}));
+                    // while (input.value.length > 0) {
+                    //     null;
+                    // }
+                    // console.log("Ur not Tpying")
+                    // socket.emit('unTyping', JSON.stringify({username: getCookie("username"), token: getCookie("token")}));
+                }
+            });
+            
+            input.addEventListener("focusout", function () {
+                isTyping = false;
+                  socket.emit('unTyping', JSON.stringify({username: getCookie("username"), token: getCookie("token")}));
+            });
+
+            function getCookie(name) {
+              const value = `; ${document.cookie}`;
+              const parts = value.split(`; ${name}=`);
+              if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            function formatDate(date) {
+              const today = new Date();
+              const isToday = date.getDate() === today.getDate() &&
+                              date.getMonth() === today.getMonth() &&
+                              date.getFullYear() === today.getFullYear();
+
+              const hours = date.getHours();
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              const period = hours >= 12 ? 'PM' : 'AM';
+              const formattedHours = hours % 12 || 12;
+
+              const timeString = `${formattedHours}:${minutes} ${period}`;
+
+              if (isToday) {
+                return `Today at ${timeString}`;
+              } else {
+                const year = date.getFullYear();
+                const month = date.toLocaleString('default', { month: 'long' });
+                const day = date.getDate();
+                return `${month} ${day}, ${year} at ${timeString}`;
+              }
+            }
+        </script>
+    </body>
+</html>
